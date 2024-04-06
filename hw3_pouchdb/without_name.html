@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>PouchDB</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <!-- DOM -->
+    <div class="App">
+      <button id="sync">Sync</button>
+      <p id="name"></p>
+    </div>
+
+    <!-- Sciprts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pouchdb/7.2.2/pouchdb.min.js"></script>
+    <script>
+      let data = 'Тут может быть ваше имя'
+
+      const DBS = {
+	    // Создаем локальную БД и коннектимся к удаленной
+        Local: new PouchDB('name_db'),
+        Remote: new PouchDB('http://admin:password@localhost:5984/name_db')
+      }
+
+      // Иницииируем реприкацию
+      const sync = DBS.Local.sync(DBS.Remote, {
+        live: true,
+        retry: true
+      }).on('change', ({ change }) => {
+        // обрабатываем изменения если в процессе синхронизации локлаьной бд таковые произошли
+		const doc = change.docs[0]
+        console.log(doc)
+        data = doc.name
+		// рисуем саму html табличку
+        render()
+      })
+
+      const render = () => {
+        name.innerHTML = data
+      }
+
+      // получение всех документов
+      const fetch = () => {
+        DBS.Local.allDocs({ include_docs: true })
+        .then(result => {
+          console.log(result)
+          if (result.rows[0].doc.hasOwnProperty('name')) {
+              data = result.rows[0].doc.name
+          }
+          render()
+        })
+      }
+
+      // Events
+      const name = document.getElementById('name')
+      const syncBtn = document.querySelector('#sync')
+
+      syncBtn.addEventListener('click', () => fetch())
+
+      render()
+
+    </script>
+  </body>
+</html>
